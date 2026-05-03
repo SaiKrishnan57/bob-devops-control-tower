@@ -126,15 +126,23 @@ Write a complete prompt that can be pasted directly into IBM Bob IDE.
 The Bob prompt must:
 - tell Bob to act as a senior software engineer
 - reference the file `app.py`
-- reference these functions if relevant: `login`, `calculate_total`, `divide_numbers`, `get_user_role`
-- ask Bob to remove or secure hardcoded credentials
-- ask Bob to add zero-division handling in `divide_numbers`
-- ask Bob to add concise docstrings
+- reference these functions if relevant: `login`, `calculate_total`, `divide_numbers`, `get_user_role`, `apply_discount`
+- for hardcoded credentials: ask Bob to COMPLETELY REMOVE them and replace with a TODO comment and return False (do NOT use environment variables or hashing as this adds complexity)
+- ask Bob to add zero-division handling in `divide_numbers` that returns None when b==0
+- ask Bob to add concise docstrings to ALL functions
 - ask Bob to keep function names unchanged
-- ask Bob to avoid over-engineering
+- ask Bob to avoid over-engineering (no imports, no external dependencies, no environment variables)
 - ask Bob to return the full updated `app.py`
-- ask Bob to generate basic tests
+- ask Bob to generate basic tests WITHOUT hardcoded credentials
 - ask Bob to explain changes in before/after format
+
+Critical Instructions for the Bob Prompt:
+- The login function should return False and have a TODO comment instead of any credential check
+- Do NOT add any imports (os, hashlib, etc.)
+- Do NOT use environment variables
+- Do NOT create password hashes
+- Keep it simple - just remove the security risk entirely
+- Tests should NOT contain any hardcoded passwords
 
 Important:
 Do not write incomplete code snippets.
@@ -160,45 +168,55 @@ The highest-priority risks are hardcoded credentials, unsafe division, and missi
 ## Priority Fix Plan
 1. Fix hardcoded credential risk in `app.py`, especially around `login`.
 2. Add zero-division handling in `divide_numbers`.
-3. Add concise docstrings to `login`, `calculate_total`, `divide_numbers`, and `get_user_role`.
+3. Add concise docstrings to `login`, `calculate_total`, `divide_numbers`, `get_user_role`, and `apply_discount`.
 
 ## IBM Bob IDE Prompt
-You are a senior software engineer working inside IBM Bob IDE.
+```
+Act as a senior software engineer.
 
-Refactor `app.py` using the following instructions:
+Analyze the file `app.py`.
 
-1. In `login(username, password)`:
-   - Remove hardcoded credentials such as `admin123`.
-   - Use a safer approach such as environment variables.
-   - Keep the function name unchanged.
-   - Keep the implementation simple.
+1. Remove hardcoded credentials in the `login` function:
+   - COMPLETELY REMOVE the credential check (username == "admin" and password == "admin123")
+   - Replace with a TODO comment: # TODO: Implement proper authentication with external credential store
+   - Make the function return False for security
+   - Do NOT use environment variables, hashing, or any imports
+   - Keep it simple
 
-2. In `divide_numbers(a, b)`:
-   - Add protection against division by zero.
-   - Raise a clear `ValueError` if `b == 0`.
+2. Implement zero-division handling in the `divide_numbers` function:
+   - Add a check: if b == 0: return None
+   - Do NOT raise exceptions
+   - Return None when division by zero occurs
 
-3. In `calculate_total(price, tax)`:
-   - Add simple validation for invalid or negative values if appropriate.
-   - Keep the function easy to understand.
+3. Add concise docstrings to the following functions: `login`, `calculate_total`, `divide_numbers`, `get_user_role`, and `apply_discount`.
+   - Use this format:
+     \"\"\"
+     Brief description.
+     
+     Args:
+         param: Description
+         
+     Returns:
+         type: Description
+     \"\"\"
 
-4. In `get_user_role(user)`:
-   - Keep the function name unchanged.
-   - Improve readability without over-engineering.
+Ensure that function names remain unchanged. Avoid over-engineering and focus on practical improvements.
 
-5. Add concise docstrings to:
-   - `login`
-   - `calculate_total`
-   - `divide_numbers`
-   - `get_user_role`
+Return the full updated `app.py`.
 
-6. Generate basic tests for the changed functions.
+Generate basic tests for the functions mentioned above to ensure their correctness and robustness. Do NOT include hardcoded credentials in tests.
 
-Constraints:
-- Do not introduce complex architecture.
-- Do not create custom exception classes unless necessary.
-- Do not rename existing functions.
-- Return the full updated `app.py`.
-- Explain each change using a before/after format.
+Explain the changes made in before/after format.
+```
+
+## Post-Implementation Review
+After implementing the fixes, the code health score is expected to improve significantly. Hardcoded credentials will be removed, reducing the risk of unauthorized access. The addition of zero-division handling will prevent application crashes and ensure reliable operation. Concise docstrings will enhance code readability and maintainability.
+
+To verify the effectiveness of these fixes, perform the following checks:
+1. Run the analyzer again and confirm the score has improved
+2. Test the `divide_numbers` function with a zero divisor to confirm it returns None
+3. Review the docstrings for clarity and completeness
+4. Execute the generated tests to ensure they pass and cover the expected functionality
 """
 
 
