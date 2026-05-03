@@ -50,6 +50,6 @@ Thumbs.db
 *.log
 
 venv/
-
+.env
 __pycache__/
 outputs/
