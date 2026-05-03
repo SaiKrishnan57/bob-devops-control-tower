@@ -49,4 +49,7 @@ Thumbs.db
 # Logs
 *.log
 
-# Made with Bob
+venv/
+.env
+__pycache__/
+outputs/

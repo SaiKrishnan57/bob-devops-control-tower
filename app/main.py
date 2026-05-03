@@ -18,7 +18,7 @@ def main():
     print("\n🚀 Bob DevOps Control Tower")
     print("--------------------------------")
     print(f"Analyzing repo: {args.repo}\n")
-
+    
     result = run_pipeline(args.repo)
 
     print(f"Files analyzed: {result['files_analyzed']}")

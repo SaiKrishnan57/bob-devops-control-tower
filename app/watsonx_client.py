@@ -1,170 +1,210 @@
-"""
-IBM watsonx.ai API Client
-Handles communication with watsonx.ai for AI-powered code analysis summaries
-"""
-
 import os
-import json
-from typing import Optional, Dict, Any
+import requests
 from dotenv import load_dotenv
 
-# Load environment variables
+
 load_dotenv()
 
 
 class WatsonxClient:
-    """Client for interacting with IBM watsonx.ai API"""
-    
     def __init__(self):
-        """Initialize the watsonx client with credentials from environment"""
-        self.api_key = os.getenv("WATSONX_API_KEY")
-        self.project_id = os.getenv("WATSONX_PROJECT_ID")
-        self.url = os.getenv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com")
-        self.model_id = os.getenv("WATSONX_MODEL_ID", "ibm/granite-13b-chat-v2")
-        self.max_tokens = int(os.getenv("WATSONX_MAX_TOKENS", "500"))
-        self.temperature = float(os.getenv("WATSONX_TEMPERATURE", "0.7"))
-        
-        self._validate_config()
-    
-    def _validate_config(self):
-        """Validate that required configuration is present"""
+        self.api_key = os.getenv("WATSONX_API_KEY", "").strip()
+        self.project_id = os.getenv("WATSONX_PROJECT_ID", "").strip()
+        self.url = os.getenv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com").strip()
+        self.model_id = os.getenv("WATSONX_MODEL_ID", "ibm/granite-3-8b-instruct").strip()
+
         if not self.api_key:
             raise ValueError("WATSONX_API_KEY environment variable is required")
+
         if not self.project_id:
             raise ValueError("WATSONX_PROJECT_ID environment variable is required")
-    
+
+    def _get_token(self):
+        response = requests.post(
+            "https://iam.cloud.ibm.com/identity/token",
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Accept": "application/json"
+            },
+            data=f"grant_type=urn:ibm:params:oauth:grant-type:apikey&apikey={self.api_key}",
+            timeout=30
+        )
+
+        if response.status_code != 200:
+            print("IAM TOKEN ERROR STATUS:", response.status_code)
+            print("IAM TOKEN ERROR BODY:", response.text)
+
+        response.raise_for_status()
+        return response.json()["access_token"]
+
     def generate_summary(self, issues: list, score_data: dict, mcp_findings: list) -> str:
-        """
-        Generate an AI-powered executive summary using watsonx.ai
-        
-        Args:
-            issues: List of code issues found
-            score_data: Dictionary containing score and status
-            mcp_findings: List of MCP tool findings
-            
-        Returns:
-            AI-generated executive summary as a string
-        """
         try:
-            # Import here to avoid dependency issues if not installed
-            from ibm_watsonx_ai.foundation_models import Model
-            from ibm_watsonx_ai.metanames import GenTextParamsMetaNames as GenParams
-            
-            # Prepare the prompt for watsonx
+            print("🚀 Calling watsonx...")
+
+            token = self._get_token()
             prompt = self._create_prompt(issues, score_data, mcp_findings)
-            
-            # Initialize the model
-            model = Model(
-                model_id=self.model_id,
-                params={
-                    GenParams.MAX_NEW_TOKENS: self.max_tokens,
-                    GenParams.TEMPERATURE: self.temperature,
-                    GenParams.DECODING_METHOD: "greedy"
+
+            endpoint = f"{self.url}/ml/v1/text/generation?version=2023-05-29"
+
+            payload = {
+                "model_id": self.model_id,
+                "project_id": self.project_id,
+                "input": prompt,
+                "parameters": {
+                    "decoding_method": "greedy",
+                    "max_new_tokens": 900,
+                    "min_new_tokens": 250,
+                    "temperature": 0.2
+                }
+            }
+
+            response = requests.post(
+                endpoint,
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
                 },
-                credentials={
-                    "apikey": self.api_key,
-                    "url": self.url
-                },
-                project_id=self.project_id
+                json=payload,
+                timeout=60
             )
-            
-            # Generate the summary
-            response = model.generate_text(prompt=prompt)
-            
-            return self._format_response(response)
-            
-        except ImportError:
-            return self._fallback_summary(issues, score_data, mcp_findings)
-        except Exception as e:
-            print(f"Warning: watsonx.ai API call failed: {str(e)}")
-            return self._fallback_summary(issues, score_data, mcp_findings)
-    
+
+            if response.status_code != 200:
+                print("WATSONX ERROR STATUS:", response.status_code)
+                print("WATSONX ERROR BODY:", response.text)
+
+            response.raise_for_status()
+
+            result = response.json()["results"][0]["generated_text"].strip()
+
+            print("✅ watsonx response received")
+
+            return f"""## watsonx.ai Engineering Plan
+
+{result}
+
+---
+*Generated dynamically using IBM watsonx.ai model: `{self.model_id}`*
+"""
+
+        except Exception as error:
+            print("❌ watsonx failed:", error)
+            return self._fallback_summary(issues, score_data, mcp_findings, error)
+
     def _create_prompt(self, issues: list, score_data: dict, mcp_findings: list) -> str:
-        """Create a structured prompt for watsonx.ai"""
-        
-        # Count severity levels
-        severity_count = {}
-        for issue in issues:
-            severity = issue["severity"]
-            severity_count[severity] = severity_count.get(severity, 0) + 1
-        
-        prompt = f"""You are an expert DevOps engineer analyzing code quality metrics. Generate a concise executive summary.
+        return f"""
+You are an expert DevOps engineering lead preparing a code improvement plan for IBM Bob IDE.
 
-Code Health Metrics:
-- Overall Score: {score_data['score']}/100
-- Status: {score_data['status']}
-- Total Issues: {len(issues)}
-- Critical Issues: {severity_count.get('Critical', 0)}
-- High Severity: {severity_count.get('High', 0)}
-- Medium Severity: {severity_count.get('Medium', 0)}
-- Low Severity: {severity_count.get('Low', 0)}
-- MCP Tool Findings: {len(mcp_findings)}
+Your job is to transform raw code-quality findings into a precise, actionable engineering plan and a high-quality IBM Bob prompt.
 
-Generate a professional executive summary that:
-1. Highlights the current code health status
-2. Identifies top 3 risk areas
-3. Provides actionable recommendations
-4. Suggests priority order for fixes
+Code Health:
+- Score: {score_data["score"]}/100
+- Status: {score_data["status"]}
 
-Keep it concise (3-4 paragraphs) and business-focused."""
+Static Code Issues:
+{issues}
 
-        return prompt
-    
-    def _format_response(self, response: str) -> str:
-        """Format the watsonx.ai response into markdown"""
-        return f"""## watsonx.ai Executive Summary
+Tool Findings:
+{mcp_findings}
 
-{response.strip()}
+Return the response in this exact markdown structure:
 
----
-*Generated by IBM watsonx.ai using {self.model_id}*
-"""
-    
-    def _fallback_summary(self, issues: list, score_data: dict, mcp_findings: list) -> str:
-        """Generate a basic summary when watsonx.ai is not available"""
-        severity_count = {}
-        for issue in issues:
-            severity = issue["severity"]
-            severity_count[severity] = severity_count.get(severity, 0) + 1
-        
-        return f"""## watsonx.ai Executive Summary
+## Executive Summary
+Write 2 short paragraphs explaining the current code health, the main engineering risks, and why this repo needs improvement.
 
-⚠️ *Note: Using fallback summary. Configure watsonx.ai credentials for AI-powered analysis.*
+## Priority Fix Plan
+List the top 3 fixes in priority order.
+Each fix must mention:
+- the file name
+- the affected function name if available
+- the risk being fixed
+- the expected improvement
 
-The repository was assessed using a Bob-powered engineering workflow supported by MCP-style local tools.
+## IBM Bob IDE Prompt
+Write a complete prompt that can be pasted directly into IBM Bob IDE.
 
-The current code health score is **{score_data['score']}/100**, with the status: **{score_data['status']}**.
+The Bob prompt must:
+- tell Bob to act as a senior software engineer
+- reference the file `app.py`
+- reference these functions if relevant: `login`, `calculate_total`, `divide_numbers`, `get_user_role`
+- ask Bob to remove or secure hardcoded credentials
+- ask Bob to add zero-division handling in `divide_numbers`
+- ask Bob to add concise docstrings
+- ask Bob to keep function names unchanged
+- ask Bob to avoid over-engineering
+- ask Bob to return the full updated `app.py`
+- ask Bob to generate basic tests
+- ask Bob to explain changes in before/after format
 
-### Key Findings:
-- **Critical Issues:** {severity_count.get('Critical', 0)}
-- **High Severity:** {severity_count.get('High', 0)}
-- **Medium Severity:** {severity_count.get('Medium', 0)}
-- **Low Severity:** {severity_count.get('Low', 0)}
-- **MCP Findings:** {len(mcp_findings)}
-
-### Risk Assessment:
-Critical/High issues may affect security, reliability, or runtime stability. Missing documentation reduces maintainability. MCP-style tool checks detected **{len(mcp_findings)}** additional operational findings.
-
-### Recommended Actions:
-1. Address critical and high-severity issues first
-2. Use IBM Bob to refactor the highest-risk functions
-3. Re-run the control tower pipeline to validate improvements
-4. Add comprehensive documentation for undocumented functions
-
----
-*To enable AI-powered summaries, configure your watsonx.ai credentials in .env file*
+Important:
+Do not write incomplete code snippets.
+Do not generate only a docstring.
+Do not stop halfway.
+The IBM Bob prompt must be complete and ready to paste.
 """
 
+    def _fallback_summary(self, issues: list, score_data: dict, mcp_findings: list, error=None) -> str:
+        return f"""
+## watsonx.ai Engineering Plan
 
-def get_watsonx_client() -> Optional[WatsonxClient]:
-    """
-    Factory function to get a watsonx client instance
-    Returns None if configuration is invalid
-    """
+Fallback summary used because watsonx.ai failed.
+
+Error:
+`{error}`
+
+## Executive Summary
+The repository has a code health score of **{score_data["score"]}/100** with status **{score_data["status"]}**. The analysis found **{len(issues)}** static issues and **{len(mcp_findings)}** tool findings.
+
+The highest-priority risks are hardcoded credentials, unsafe division, and missing documentation.
+
+## Priority Fix Plan
+1. Fix hardcoded credential risk in `app.py`, especially around `login`.
+2. Add zero-division handling in `divide_numbers`.
+3. Add concise docstrings to `login`, `calculate_total`, `divide_numbers`, and `get_user_role`.
+
+## IBM Bob IDE Prompt
+You are a senior software engineer working inside IBM Bob IDE.
+
+Refactor `app.py` using the following instructions:
+
+1. In `login(username, password)`:
+   - Remove hardcoded credentials such as `admin123`.
+   - Use a safer approach such as environment variables.
+   - Keep the function name unchanged.
+   - Keep the implementation simple.
+
+2. In `divide_numbers(a, b)`:
+   - Add protection against division by zero.
+   - Raise a clear `ValueError` if `b == 0`.
+
+3. In `calculate_total(price, tax)`:
+   - Add simple validation for invalid or negative values if appropriate.
+   - Keep the function easy to understand.
+
+4. In `get_user_role(user)`:
+   - Keep the function name unchanged.
+   - Improve readability without over-engineering.
+
+5. Add concise docstrings to:
+   - `login`
+   - `calculate_total`
+   - `divide_numbers`
+   - `get_user_role`
+
+6. Generate basic tests for the changed functions.
+
+Constraints:
+- Do not introduce complex architecture.
+- Do not create custom exception classes unless necessary.
+- Do not rename existing functions.
+- Return the full updated `app.py`.
+- Explain each change using a before/after format.
+"""
+
+
+def get_watsonx_client():
     try:
         return WatsonxClient()
-    except ValueError as e:
-        print(f"Warning: {str(e)}")
+    except Exception as error:
+        print("Warning:", error)
         return None
-
-# Made with Bob

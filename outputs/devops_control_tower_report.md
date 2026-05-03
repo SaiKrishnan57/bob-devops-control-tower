@@ -1,6 +1,6 @@
 # Bob DevOps Control Tower Report
 
-Generated at: 2026-05-03 10:50:00.662243
+Generated at: 2026-05-03 15:21:35.632496
 Repository analyzed: `demo_repo`
 
 ## 1. Code Health Score
@@ -69,19 +69,60 @@ Explain every change in a before-and-after format.
 ## 5. watsonx.ai Style Executive Summary
 
 
-## watsonx.ai Executive Summary
+## watsonx.ai Engineering Plan
 
-The repository was assessed using a Bob-powered engineering workflow supported by MCP-style local tools.
+Fallback summary used because watsonx.ai failed.
 
-The current code health score is **48/100**, with the status: **Needs Refactoring**.
+Error:
+`404 Client Error: Not Found for url: https://us-south.ml.cloud.ibm.com/ml/v1/text/generation?version=2023-05-29`
 
-Key risks identified:
-- Critical/High issues may affect security, reliability, or runtime stability.
-- Missing documentation reduces maintainability.
-- MCP-style tool checks detected **2** additional operational findings.
+## Executive Summary
+The repository has a code health score of **48/100** with status **Needs Refactoring**. The analysis found **6** static issues and **2** tool findings.
 
-Recommended next action:
-Use IBM Bob to refactor the highest-risk functions first, then re-run the control tower pipeline to validate whether the code health score improves.
+The highest-priority risks are hardcoded credentials, unsafe division, and missing documentation.
+
+## Priority Fix Plan
+1. Fix hardcoded credential risk in `app.py`, especially around `login`.
+2. Add zero-division handling in `divide_numbers`.
+3. Add concise docstrings to `login`, `calculate_total`, `divide_numbers`, and `get_user_role`.
+
+## IBM Bob IDE Prompt
+You are a senior software engineer working inside IBM Bob IDE.
+
+Refactor `app.py` using the following instructions:
+
+1. In `login(username, password)`:
+   - Remove hardcoded credentials such as `admin123`.
+   - Use a safer approach such as environment variables.
+   - Keep the function name unchanged.
+   - Keep the implementation simple.
+
+2. In `divide_numbers(a, b)`:
+   - Add protection against division by zero.
+   - Raise a clear `ValueError` if `b == 0`.
+
+3. In `calculate_total(price, tax)`:
+   - Add simple validation for invalid or negative values if appropriate.
+   - Keep the function easy to understand.
+
+4. In `get_user_role(user)`:
+   - Keep the function name unchanged.
+   - Improve readability without over-engineering.
+
+5. Add concise docstrings to:
+   - `login`
+   - `calculate_total`
+   - `divide_numbers`
+   - `get_user_role`
+
+6. Generate basic tests for the changed functions.
+
+Constraints:
+- Do not introduce complex architecture.
+- Do not create custom exception classes unless necessary.
+- Do not rename existing functions.
+- Return the full updated `app.py`.
+- Explain each change using a before/after format.
 
 
 ## 6. Final Recommendation
