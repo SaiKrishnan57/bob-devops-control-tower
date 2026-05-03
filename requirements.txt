@@ -1,0 +1,8 @@
+# Core dependencies
+python-dotenv>=1.0.0
+
+# IBM watsonx.ai SDK
+ibm-watsonx-ai>=0.2.0
+
+# Optional: For enhanced functionality
+requests>=2.31.0
