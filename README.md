@@ -7,6 +7,14 @@
 
 ---
 
+## 📁 Bob Session History
+
+**Bob session history reports are stored in the `bob_sessions/` folder.**
+
+This folder contains detailed logs and reports from your Bob IDE interactions, making it easy to track code analysis sessions and review past recommendations.
+
+---
+
 ## 📋 Table of Contents
 
 - [Features](#-features)
@@ -259,7 +267,7 @@ bob-devops-control-tower/
 │   ├── test_app.py          # Sample tests
 │   └── REFACTORING_NOTES.md # Refactoring documentation
 ├── outputs/                 # Generated analysis reports
-├── uploads/                 # Temporary upload directory (web UI)
+├── bob_sessions/            # The reports for BOB usage are uploaded here
 ├── web_app.py              # Flask web application
 ├── config.example.env       # Example environment configuration
 ├── requirements.txt         # Python dependencies
