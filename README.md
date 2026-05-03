@@ -10,6 +10,7 @@ A comprehensive code quality analysis tool powered by IBM Bob and watsonx.ai tha
 - 📊 **Code Health Scoring**: Provides quantitative metrics (0-100 scale)
 - 🛠️ **MCP Tool Integration**: Extensible tool framework for custom checks
 - 📝 **Detailed Reports**: Generates comprehensive markdown reports
+- 🌐 **Modern Web UI**: Beautiful, intuitive web interface for code analysis
 
 ## Prerequisites
 
@@ -59,7 +60,26 @@ A comprehensive code quality analysis tool powered by IBM Bob and watsonx.ai tha
 
 ## Usage
 
-### Basic Usage (Without watsonx.ai)
+### Option 1: Web UI (Recommended)
+
+Launch the modern web interface:
+
+```bash
+python web_app.py
+```
+
+Then open your browser to `http://localhost:5000`
+
+**Features:**
+- 🎨 Beautiful, modern interface
+- 📤 Drag-and-drop file upload
+- 📊 Interactive dashboard with real-time results
+- 📥 One-click report download
+- 🔄 Dual analysis modes (local path or file upload)
+
+See [WEB_UI_GUIDE.md](WEB_UI_GUIDE.md) for detailed instructions.
+
+### Option 2: Command Line Interface
 
 Run the analysis on any Python repository:
 
@@ -74,13 +94,7 @@ python -m app.main --repo ./demo_repo
 
 ### With watsonx.ai Integration
 
-Once you've configured your `.env` file with watsonx.ai credentials:
-
-```bash
-python -m app.main --repo /path/to/your/repository
-```
-
-The tool will automatically use watsonx.ai to generate AI-powered executive summaries.
+Once you've configured your `.env` file with watsonx.ai credentials, both the CLI and Web UI will automatically use watsonx.ai to generate AI-powered executive summaries.
 
 ## Output
 
@@ -160,11 +174,15 @@ bob-devops-control-tower/
 │   ├── pipeline.py          # Analysis pipeline orchestration
 │   ├── reporter.py          # Report generation
 │   ├── scorer.py            # Code health scoring
-│   ├── watsonx_client.py    # watsonx.ai API client
-│   └── watsonx_summary.py   # Summary generation
+│   └── watsonx_client.py    # watsonx.ai API client
+├── templates/
+│   └── index.html           # Web UI template
 ├── outputs/                 # Generated reports
+├── uploads/                 # Temporary upload directory
+├── web_app.py              # Flask web application
 ├── config.example.env       # Example configuration
 ├── requirements.txt         # Python dependencies
+├── WEB_UI_GUIDE.md         # Web UI documentation
 └── README.md               # This file
 ```
 
@@ -232,12 +250,14 @@ For issues and questions:
 
 ## Roadmap
 
+- [x] Web dashboard for reports
 - [ ] Support for additional programming languages
 - [ ] Integration with CI/CD pipelines
 - [ ] Custom rule configuration
-- [ ] Web dashboard for reports
 - [ ] Team collaboration features
 - [ ] Historical trend analysis
+- [ ] Real-time code analysis
+- [ ] GitHub/GitLab integration
 
 ## Acknowledgments
 

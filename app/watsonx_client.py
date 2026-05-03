@@ -39,7 +39,7 @@ class WatsonxClient:
 
     def generate_summary(self, issues: list, score_data: dict, mcp_findings: list) -> str:
         try:
-            print("🚀 Calling watsonx...")
+            print("Calling watsonx...")
 
             token = self._get_token()
             prompt = self._create_prompt(issues, score_data, mcp_findings)
@@ -77,7 +77,7 @@ class WatsonxClient:
 
             result = response.json()["results"][0]["generated_text"].strip()
 
-            print("✅ watsonx response received")
+            print("watsonx response received")
 
             return f"""## watsonx.ai Engineering Plan
 
@@ -88,7 +88,7 @@ class WatsonxClient:
 """
 
         except Exception as error:
-            print("❌ watsonx failed:", error)
+            print("watsonx failed:", error)
             return self._fallback_summary(issues, score_data, mcp_findings, error)
 
     def _create_prompt(self, issues: list, score_data: dict, mcp_findings: list) -> str:

@@ -15,7 +15,7 @@ def main():
 
     args = parser.parse_args()
 
-    print("\n🚀 Bob DevOps Control Tower")
+    print("\nBob DevOps Control Tower")
     print("--------------------------------")
     print(f"Analyzing repo: {args.repo}\n")
     

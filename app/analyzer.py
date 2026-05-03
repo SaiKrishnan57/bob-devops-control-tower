@@ -43,12 +43,41 @@ def analyze_code(files: dict) -> list:
                 })
 
             if isinstance(node, ast.Constant) and isinstance(node.value, str):
-                if "admin123" in node.value or "password" in node.value.lower():
+                # Check for actual hardcoded credentials, not just the word "password"
+                # Exclude environment variable names and common non-secret patterns
+                value_lower = node.value.lower()
+                
+                # Skip if it's an environment variable name (all caps with underscores)
+                if node.value.isupper() and '_' in node.value:
+                    continue
+                
+                # Skip if it's just a parameter name or role name
+                if node.value in ["admin", "manager", "user", "username", "password"]:
+                    continue
+                    
+                # Flag actual suspicious patterns
+                suspicious_patterns = [
+                    "admin123",
+                    "password123",
+                    "secret123",
+                    "apikey",
+                ]
+                
+                # Check for patterns like "password=" or "secret=" with actual values
+                if any(pattern in value_lower for pattern in suspicious_patterns):
                     issues.append({
                         "file": file_name,
                         "type": "Hardcoded Credential",
                         "severity": "Critical",
-                        "message": "Potential hardcoded credential found."
+                        "message": f"Potential hardcoded credential found: {node.value[:20]}..."
+                    })
+                # Check for assignment-like patterns (e.g., "password=something")
+                elif ("=" in node.value and any(kw in value_lower for kw in ["password", "secret", "token", "key"])):
+                    issues.append({
+                        "file": file_name,
+                        "type": "Hardcoded Credential",
+                        "severity": "Critical",
+                        "message": "Potential hardcoded credential in assignment pattern."
                     })
 
     return issues
